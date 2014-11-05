@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <link href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css" rel="stylesheet">
+    <link href="/static/css/gmailanalyzer.css" rel="stylesheet">
+    <link href='http://fonts.googleapis.com/css?family=Rokkitt:400,700' rel='stylesheet' type='text/css'>
+
+    {% block extra_css %}
+    {% endblock %}
+
+    {% block extra_js %}
+    {% endblock %}
+</head>
+
+<body>
+    <div class="container">
+        <div class="row">
+            <div class="col-md-12">
+                <h1>Gmail Analyzer</h1>
+            </div><!-- col-md-12 -->
+        </div><!-- .row -->
+
+        {% block main %}
+        {% endblock %}
+
+    </div><!-- container -->
+</body>
+
+{% block end_js %}
+{% endblock %}
+
+{% block end_css %}
+{% endblock %}
+
+</html>
+
+

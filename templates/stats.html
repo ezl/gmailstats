@@ -1,0 +1,211 @@
+{% extends "base.html" %}
+
+{% block extra_css %}
+    <link href="/static/css/charts.css" rel="stylesheet">
+{% endblock %}
+
+{% block end_js %}
+    <script type="text/javascript" src="http://d3js.org/d3.v3.min.js"></script>
+    <script type="text/javascript" src="/static/js/stats.js"></script>
+    <script type="text/javascript" src="/static/js/bar.js"></script>
+    <script type="text/javascript">
+        var containerWidth = Math.min(document.getElementById("chart").offsetWidth, 620);
+        var values = {{ my_response_times }};
+        renderResponseTimeHistogram(values, "chart", containerWidth);
+
+        var emailsSent = {{ emails_sent_by_day }};
+        var emailsReceived = {{ emails_received_by_day }}
+
+        renderBarGraph(emailsSent, "#emails-sent", containerWidth);
+        renderBarGraph(emailsReceived, "#emails-received", containerWidth);
+    </script>
+{% endblock %}
+
+{% block main %}
+
+    <div class="row">
+        <div class="col-md-12">
+            <p><strong>This information is generated from your gmail account based on the last {{ DAYS }} days of emails.</strong></p>
+        </div><!-- col-md-12 -->
+    </div><!-- row -->
+
+    <div class="row">
+        <div class="col-md-12 text-center">
+            <img src="http://i.imgur.com/0HZId2Z.png" />
+        </div><!-- col 12 -->
+    </div><!-- row -->
+
+    <div class="row">
+        <div class="col-md-6">
+            <h2>Summary</h2>
+            <table class="table summary">
+                <tr><td class="huge">{{ total_email_count }}</ td><td class="vertical-middle">The total number of emails that you have sent and received over the last {{ DAYS }} days</td></tr>
+                <tr><td class="huge">{{ num_threads }}</ td><td class="vertical-middle">Number of gmail conversation threads</td></tr>
+                <tr><td class="huge">{{ num_outbound_emails }}</ td><td class="vertical-middle">Number of outbound emails sent by you</td></tr>
+            </table>
+
+        </div><!-- col -->
+        <div class="col-md-6">
+            <h2>Inbox Summary</h2>
+            <table class="table summary">
+                <tr><td class="huge">{{ inbox_total }}</ td><td class="vertical-middle">Number of emails in your inbox now</td></tr>
+                <tr><td class="huge">{{ inbox_unread }}</ td><td class="vertical-middle">Number of unread emails in your inbox now</td></tr>
+            </table>
+            {% if inbox_total < 11 %}
+                <li>Good job! You're awesome at email! Only <strong>{{ inbox_total }}</strong> messages in your inbox!</li>
+            {% endif %}
+            {% if inbox_total < num_threads / 10 %}
+                <li>You clean out your inbox pretty well!</li>
+            {% endif %}
+            {% if inbox_total > 200 %}
+                <li>You probably suck at email. You are awful at clearing your inbox.</li>
+                <li></li>
+            {% endif  %}
+            {% if inbox_unread > 50 %}
+                <li>You read your emails pretty quickly.</li>
+            {% endif %}
+            {% if inbox_total > 1000 and inbox_unread > inbox_total * 0.6 %}
+                <li>You suck at email. {{ inbox_unread }} unread mails is awful.</li>
+            {% endif %}
+            {% if num_other_emails > 0.5 * num_inbound_emails %}
+                <li>You probably get a lot of spam or newsletter subscriptions</li>
+            {% endif %}
+
+<!--
+            <h2>Who Leaves Who Hanging?</h2>
+            <table class="table summary">
+                <tr class="hidden"><td class="huge">{{ ignored_for_email|length + ignored_for_subject|length + ignored_for_body|length }}</ td><td class="vertical-middle">Filtered out of stats (irretrievable, unparsable, excluded for content)</td></tr>
+                <tr><td class="huge">{{ num_other_emails }}</ td><td class="vertical-middle">Other - you're not the recipient or the sender (typically email lists, catchalls, bccs)</td></tr>
+                <tr class="hidden"><td class="huge">{{ num_remaining_emails }}</ td><td class="vertical-middle">Number of emails remaining after filtering out crap</td></tr>
+                <tr><td class="huge">{{ num_inbound_emails / (num_inbound_emails + num_outbound_emails) }}</ td><td class="vertical-middle">Inbound emails received</td></tr>
+                <tr><td class="huge">{{ num_selfie_emails }}</ td><td class="vertical-middle">Number of times you sent yourself an email</td></tr>
+                <tr><td class="huge">{{ num_last_responder_was_me }}</ td><td class="vertical-middle">Number of times you wrote the last email in a thread</td></tr>
+                <tr><td class="huge">{{ num_last_responder_was_counterparty }}</ td><td class="vertical-middle">Number of times the other person wrote the last email in the conversation thread</td></tr>
+            </table>
+-->
+        </div><!-- col 6 -->
+    </div><!-- row -->
+
+    <div class="row">
+        <div class="col-md-12">
+            <h2>Your Send / Receive History</h2>
+            <p><strong>How many emails you sent each day</strong></p>
+            <div id="emails-sent" class="barchart"></div>
+
+            <p><strong>How many emails received each day</strong></p>
+            <div id="emails-received" class="barchart"></div>
+        </div><!-- col-md-12 -->
+    </div><!-- row -->
+
+    <div class="row">
+        <div class="col-md-12">
+            <h2>Your Typical Response Time</h2>
+            <p><strong>You responded to {{ my_response_times|length }} messages with an average response time of {{ my_response_times|average|round(2) }} hours.</strong></p>
+            <p>Here's what your actual response time distribution looks like:</p>
+            <br />
+            <div id="chart">
+            </div>
+        </div><!-- col-md-12 -->
+    </div><!-- row -->
+
+    <div class="row">
+        <div class="col-md-9">
+            <h2>You haven't gotten a response ( <strong>{{ only_sender_was_me|length }}</strong> )</h2>
+            <p>In these converasation threads, you have not received a response.</p>
+            <table class="table">
+                <thead>
+                    <th>#</th>
+                    <th>To</th>
+                    <th>Subject</th>
+                </thead>
+                {% for conversation in only_sender_was_me %}
+                    <tr class="clickable" >
+                        <td>{{ conversation.length }}</td>
+                        <td><a href="{{ conversation.get_gmail_url }}" target="_blank">{{ conversation.last_email.to.0|escape or conversation.last_email.to.1|escape }}</td>
+                        <td><a href="{{ conversation.get_gmail_url }}" target="_blank">{{ conversation.subject }}</td>
+                    </tr>
+                {% endfor%}
+            </table>
+        </div><!-- col 6 -->
+
+        <div class="col-md-6 hidden">
+            <h2>You did not respond to the last email ( <strong>{{ last_responder_was_counterparty|length }}</strong> )</h2>
+            <table class="table">
+                <thead>
+                    <th>#</th>
+                    <th>To</th>
+                    <th>Subject</th>
+                </thead>
+                {% for conversation in last_responder_was_counterparty %}
+                    <tr>
+                        <td>{{ conversation.length }}</td>
+                        <td>{{ conversation.last_email.fr.0|escape or conversation.last_email.fr.1|escape }}</td>
+                        <td>{{ conversation.subject }}</td>
+                    </tr>
+                {% endfor%}
+            </table>
+
+        </div><!-- col-md-6 -->
+    </div><!-- row -->
+
+    <div class="row hidden">
+        <div class="col-md-12">
+            <h2>Most Active Corresponders</h2>
+            <table class="table">
+                <thead>
+                    <th># Emails Sent</th>
+                    <th>Sender</th>
+                </thead>
+                {% for sender,count in emails_sent_per_person[:10] %}
+                    {% if loop.index <= 10 and loop.index > 1 %}
+                        <tr>
+                            <td>{{ count }}</td>
+                            <td>{{ sender }}</td>
+                        </tr>
+                    {% endif %}
+                {% endfor%}
+            </table>
+        </div><!-- col-md-12 -->
+    </div><!-- row -->
+
+    <div class="row hidden">
+        <div class="col-md-6">
+            <h2>You sent the last email ( <strong>{{ last_responder_was_me|length }}</strong> )</h2>
+            <p>In these converasation threads, you sent the last email and did not receive the last response.</p>
+            <table class="table">
+                <thead>
+                    <th>#</th>
+                    <th>To</th>
+                    <th>Subject</th>
+                </thead>
+                {% for conversation in last_responder_was_me %}
+                    <tr>
+                        <td>{{ conversation.length }}</td>
+                        <td>{{ conversation.last_email.to.0|escape or conversation.last_email.to.1|escape }}</td>
+                        <td><a href="{{ conversation.get_gmail_url }}">{{ conversation.subject }}</a></td>
+                    </tr>
+                {% endfor%}
+            </table>
+        </div><!-- col 6 -->
+
+        <div class="col-md-6 hidden">
+            <h2>You did not respond to the last email ( <strong>{{ last_responder_was_counterparty|length }}</strong> )</h2>
+            <table class="table">
+                <thead>
+                    <th>#</th>
+                    <th>To</th>
+                    <th>Subject</th>
+                </thead>
+                {% for conversation in last_responder_was_counterparty %}
+                    <tr>
+                        <td>{{ conversation.length }}</td>
+                        <td>{{ conversation.last_email.fr.0|escape or conversation.last_email.fr.1|escape }}</td>
+                        <td><a href="{{ conversation.get_gmail_url }}">{{ conversation.subject }}</a></td>
+                    </tr>
+                {% endfor%}
+            </table>
+
+        </div><!-- col-md-6 -->
+    </div><!-- row -->
+
+{% endblock %}

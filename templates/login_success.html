@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block main %}
+    <div class="row">
+        <div class="col-md-6">
+            <h2>
+                Successfully logged in!
+            </h2>
+            <br />
+            <br />
+            <div class="row">
+                <div class="col-md-2">
+                    <strong><i class="fa fa-circle-o-notch fa-spin fa-4x"></i></strong>
+                </div><!-- col-md-4 -->
+                <div class="col-md-10">
+                    <p>I'm now processing your inbox statistics.  This could take a few minutes.</p>
+                    <p>As soon as it's done, this page will refresh.</p>
+                </div><!-- col-md-8 -->
+            </div><!-- row -->
+
+        </div><!-- col-md-6 -->
+    </div><!-- row -->
+{% endblock %}
+
+
+{% block end_js %}
+    <script type="text/javascript">
+        (function() {
+            var redirect_url = "http://localhost:8080/stats";
+            window.location = redirect_url;
+        })();
+    </script>
+{% endblock %}
