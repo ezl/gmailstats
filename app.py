@@ -16,7 +16,8 @@ from bottle import (
     get,
     post,
     request,
-    static_file
+    static_file,
+    Bottle
     )
 
 
@@ -29,6 +30,8 @@ from settings import (
     ACCESS_TOKEN,
     REFRESH_TOKEN,
     )
+
+app = Bottle()
 
 USERNAME = None
 env = Environment(extensions=['jinja2.ext.with_'], loader=FileSystemLoader('templates'))
@@ -47,17 +50,17 @@ def refresh_token():
         raise Exception
     return new_access_token
 
-@route('/static/<filename:path>')
+@app.route('/static/<filename:path>')
 def server_static(filename):
     return static_file(filename, root='static')
 
-@get('/')
+@app.get('/')
 def homepage():
     template = env.get_template("homepage.html")
     context = {}
     return template.render(context)
 
-@post('/')
+@app.post('/')
 def auth():
     global USERNAME
     global DAYS
@@ -74,7 +77,7 @@ def auth():
                               }))
     redirect(user_url)
 
-@route('/gmail_oauth_cb')
+@app.route('/gmail_oauth_cb')
 def oauth_cb():
     code = request.params['code']
     r = requests.post(OAUTH_URL_TOKEN, data={
@@ -91,30 +94,30 @@ def oauth_cb():
         REFRESH_TOKEN = r.json()['refresh_token']
     return redirect('/login_success')
 
-@route('/log_in_again')
+@app.route('/log_in_again')
 def log_in_again():
     template = env.get_template("log_in_again.html")
     context = {}
     return template.render(context)
 
-@route('/login_success')
+@app.route('/login_success')
 def login_success():
     template = env.get_template("login_success.html")
     context = {}
     return template.render(context)
 
 
-@route('/nologin')
+@app.route('/nologin')
 def nologin():
     return "Unable to log in."
 
-@route('/stats')
+@app.route('/stats')
 def stats():
     template = env.get_template("stats.html")
 
     FILENAME = "obj.pickle"
-    LOAD_FROM_PICKLE = True
-    SAVE = not LOAD_FROM_PICKLE
+    LOAD_FROM_PICKLE = False
+    SAVE = False
 
     if LOAD_FROM_PICKLE is True:
         with open(FILENAME, "r") as f:
@@ -179,4 +182,5 @@ def stats():
 
     return template.render(context)
 
-run(host='localhost', port=8080)
+if __name__ == "__main__":
+    app.run(host='0.0.0.0', port=8080)
