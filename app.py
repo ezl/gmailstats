@@ -29,6 +29,7 @@ from settings import (
     REDIRECT_URI,
     ACCESS_TOKEN,
     REFRESH_TOKEN,
+    SITE_DOMAIN,
     )
 
 app = Bottle()
@@ -103,7 +104,9 @@ def log_in_again():
 @app.route('/login_success')
 def login_success():
     template = env.get_template("login_success.html")
-    context = {}
+    context = {
+        'redirect_url': "{}/stats/".format(SITE_DOMAIN)
+    }
     return template.render(context)
 
 
