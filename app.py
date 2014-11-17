@@ -105,7 +105,7 @@ def log_in_again():
 def login_success():
     template = env.get_template("login_success.html")
     context = {
-        'redirect_url': "{}/stats/".format(SITE_DOMAIN)
+        'redirect_url': "{}/stats".format(SITE_DOMAIN)
     }
     return template.render(context)
 
